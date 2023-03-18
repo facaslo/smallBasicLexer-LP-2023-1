@@ -1,0 +1,7 @@
+variable = 1
+Variable = -50
+vAriable = 3.23
+años = 10
+MiNombre = "David"
+paraNada20 = "False"
+vida_de_Ángel = 20.908
