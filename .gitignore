@@ -175,4 +175,5 @@ pyrightconfig.json
 
 *.txt
 
+unCode.Py
 # End of https://www.toptal.com/developers/gitignore/api/python

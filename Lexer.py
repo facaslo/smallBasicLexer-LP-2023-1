@@ -16,7 +16,7 @@ class Lexer():
       self.initialState = 0
       self.currentState = self.initialState   
       self.symbols = {"+": "tkn_plus" ,"-": "tkn_minus" , "*": "tkn_times", "/": "tkn_div", "=": "tkn_equals", "<": "tkn_less", ">": "tkn_greater" , "<=": "tkn_leq" , ">=": "tkn_geq" , "<>": "tkn_diff", ".": "tkn_period", ",": "tkn_comma" , ":": "tkn_colon", "[": "tkn_left_brac" , "]": "tkn_right_brac", "(": "tkn_left_paren" , ")": "tkn_right_paren"}
-      self.reservedWords = {'Else', 'ElseIf', 'EndFor', 'EndIf', 'EndSub', 'EndWhile', 'For', 'Goto', 'If', 'Step', 'Sub', 'Then', 'To', 'While', 'And', 'Or', 'TextWindow', 'Array'}
+      self.reservedWords = {'Stack','Program','Else', 'ElseIf', 'EndFor', 'EndIf', 'EndSub', 'EndWhile', 'For', 'Goto', 'If', 'Step', 'Sub', 'Then', 'To', 'While', 'And', 'Or', 'TextWindow', 'Array'}
 
 
       self.textLocation = location
@@ -28,7 +28,7 @@ class Lexer():
       self.lexError = False
       self.tokenBeginsRow = 0
       self.tokenBeginsCol = 0
-      self.Tokens = []
+      self.Output = {"tokens":[], "error": ""}
     
     def readFile(self):          
       self.row = 1  
@@ -66,9 +66,9 @@ class Lexer():
           char = line[self.col-1]          
           #print(line[self.col-1] , end = "")
           if not self.comment: 
-            # print(f"char_a:{line[self.col-1]} - state_a:{self.currentState} - buffer_a:{self.bufferedWord} - row_a:{self.row} - col_a:{self.col}")
+            #print(f"char_a:{line[self.col-1]} - state_a:{self.currentState} - buffer_a:{self.bufferedWord} - row_a:{self.row} - col_a:{self.col}")
             self.transition_state_func(char)            
-          if (not self.comment) and char == "'":
+          if (not self.comment) and char == "'" and not(self.currentState==8 or self.currentState==9 ):
             self.comment = True
           #print(f"char_b:{line[self.col-1]} - state_b:{self.currentState} - buffer_b:{self.bufferedWord} - row_b:{self.row} - col_b:{self.col}")                
           self.col += 1          
@@ -77,37 +77,36 @@ class Lexer():
       
     def transition_state_func(self, char):  
 
-      if not (char in self.symbols.keys() or re.search('[a-z]|[A-Z]|_', char) != None or char.isnumeric() or char in set({"\n" , "\t" , " ", "'", "\""}) ):
-          print(char)
-          self.Tokens.append(f">>> Error lexico (Linea: {self.row}, Posicion: {self.col})")
+      if (not(char in self.symbols.keys() or re.search('[À-ž]|[A-Z]|[a-z]|ñ|ç|_', char) != None or char.isnumeric() or char in set({"\n" , "\t" , " ", "'", "\""})) and not(self.currentState == 8 or self.currentState == 9)) or (char=="_" and self.currentState==0):                    
+          self.Output['error'] = f">>> Error lexico (Linea: {self.row}, Posicion: {self.col})"
           self.lexError = True
           return
       
       elif (char == 'EOF' or self.lexError) and self.bufferedWord != "":         
       
         if self.currentState == 2 or self.currentState == 3:          
-          self.Tokens.append(f"<{self.symbols[self.bufferedWord]}, {self.tokenBeginsRow}, {self.tokenBeginsCol}>")
+          self.Output["tokens"].append(f"<{self.symbols[self.bufferedWord]}, {self.tokenBeginsRow}, {self.tokenBeginsCol}>")
 
         if self.currentState == 1 or self.currentState == 5:
           if self.bufferedWord.isnumeric() or isFloat(self.bufferedWord):
-            self.Tokens.append(f"<tkn_number, {self.bufferedWord}, {self.tokenBeginsRow}, {self.tokenBeginsCol}>")
+            self.Output["tokens"].append(f"<tkn_number, {self.bufferedWord}, {self.tokenBeginsRow}, {self.tokenBeginsCol}>")
           else:
-            self.Tokens.append(f"<tkn_number, {self.bufferedWord[0:len(self.bufferedWord)-1]}, {self.tokenBeginsRow}, {self.tokenBeginsCol}>")
-            self.Tokens.append(f"<tkn_period, {self.row}, {self.col - 1}>")
+            self.Output["tokens"].append(f"<tkn_number, {self.bufferedWord[0:len(self.bufferedWord)-1]}, {self.tokenBeginsRow}, {self.tokenBeginsCol}>")
+            self.Output["tokens"].append(f"<tkn_period, {self.row}, {self.col - 1}>")
 
         elif self.currentState == 6:
           if self.bufferedWord in self.reservedWords:
-            self.Tokens.append(f"<{self.bufferedWord}, {self.tokenBeginsRow}, {self.tokenBeginsCol}>")
+            self.Output["tokens"].append(f"<{self.bufferedWord}, {self.tokenBeginsRow}, {self.tokenBeginsCol}>")
           else:
-            self.Tokens.append(f"<id, {self.bufferedWord}, {self.tokenBeginsRow}, {self.tokenBeginsCol}>")
+            self.Output["tokens"].append(f"<id, {self.bufferedWord}, {self.tokenBeginsRow}, {self.tokenBeginsCol}>")
 
         elif self.currentState == 9:
           if self.bufferedWord.lower() == "true":
-           self.Tokens.append(f"<True, {self.tokenBeginsRow}, {self.tokenBeginsCol}>")
+           self.Output["tokens"].append(f"<True, {self.tokenBeginsRow}, {self.tokenBeginsCol}>")
           elif self.bufferedWord.lower() == "false":
-            self.Tokens.append(f"<False, {self.tokenBeginsRow}, {self.tokenBeginsCol}>")
+            self.Output["tokens"].append(f"<False, {self.tokenBeginsRow}, {self.tokenBeginsCol}>")
           else:
-            self.Tokens.append(f"<tkn_text, {self.bufferedWord}, {self.tokenBeginsRow}, {self.tokenBeginsCol}>")
+            self.Output["tokens"].append(f"<tkn_text, {self.bufferedWord}, {self.tokenBeginsRow}, {self.tokenBeginsCol}>")
 
       elif self.currentState == 0:                
         if char in self.symbols.keys():    
@@ -120,7 +119,7 @@ class Lexer():
           self.tokenBeginsCol = self.col
           self.bufferedWord += char
           self.currentState = 1
-        elif re.search('[a-z]|[A-Z]|_', char):
+        elif re.search('[À-ž]|[A-Z]|[a-z]|ñ|ç', char):
           self.tokenBeginsRow = self.row      
           self.tokenBeginsCol = self.col
           self.bufferedWord +=  char
@@ -149,7 +148,7 @@ class Lexer():
         else:
           self.currentPosition -= 1 
           self.col -= 1   
-          self.Tokens.append(f"<{self.symbols[self.bufferedWord]}, {self.tokenBeginsRow}, {self.tokenBeginsCol}>")
+          self.Output["tokens"].append(f"<{self.symbols[self.bufferedWord]}, {self.tokenBeginsRow}, {self.tokenBeginsCol}>")
           self.bufferedWord = ""
           self.currentState = 0            
           
@@ -157,7 +156,7 @@ class Lexer():
         self.currentPosition -= 1       
         self.col -= 1   
         self.currentState = 0        
-        self.Tokens.append(f"<{self.symbols[self.bufferedWord]}, {self.tokenBeginsRow}, {self.tokenBeginsCol}>")
+        self.Output["tokens"].append(f"<{self.symbols[self.bufferedWord]}, {self.tokenBeginsRow}, {self.tokenBeginsCol}>")
         self.bufferedWord = ""                            
 
       elif self.currentState == 4:
@@ -165,10 +164,10 @@ class Lexer():
         self.currentPosition -= 1
         self.col -= 1           
         if self.bufferedWord.isnumeric() or isFloat(self.bufferedWord):
-          self.Tokens.append(f"<tkn_number, {self.bufferedWord}, {self.tokenBeginsRow}, {self.tokenBeginsCol}>")
+          self.Output["tokens"].append(f"<tkn_number, {self.bufferedWord}, {self.tokenBeginsRow}, {self.tokenBeginsCol}>")
         else:
-          self.Tokens.append(f"<tkn_number, {self.bufferedWord[0:len(self.bufferedWord)-1]}, {self.tokenBeginsRow}, {self.tokenBeginsCol}>")
-          self.Tokens.append(f"<tkn_period, {self.row}, {self.col}>")
+          self.Output["tokens"].append(f"<tkn_number, {self.bufferedWord[0:len(self.bufferedWord)-1]}, {self.tokenBeginsRow}, {self.tokenBeginsCol}>")
+          self.Output["tokens"].append(f"<tkn_period, {self.row}, {self.col}>")
         self.bufferedWord = ""
       
       elif self.currentState == 5:
@@ -180,7 +179,7 @@ class Lexer():
           self.currentState = 4         
       
       elif self.currentState == 6:
-        if re.search('[a-z]|[A-Z]|_', char) != None or char.isnumeric():
+        if re.search('[À-ž]|[A-Z]|[a-z]|ñ|ç|_', char) != None or char.isnumeric():
           self.bufferedWord +=  char 
         else:
           self.currentPosition -= 1
@@ -192,9 +191,9 @@ class Lexer():
         self.currentPosition -= 1
         self.col -= 1   
         if self.bufferedWord in self.reservedWords:
-          self.Tokens.append(f"<{self.bufferedWord}, {self.tokenBeginsRow}, {self.tokenBeginsCol}>")
+          self.Output["tokens"].append(f"<{self.bufferedWord}, {self.tokenBeginsRow}, {self.tokenBeginsCol}>")
         else:
-          self.Tokens.append(f"<id, {self.bufferedWord}, {self.tokenBeginsRow}, {self.tokenBeginsCol}>")
+          self.Output["tokens"].append(f"<id, {self.bufferedWord}, {self.tokenBeginsRow}, {self.tokenBeginsCol}>")
         self.bufferedWord = ""
 
       elif self.currentState == 8:
@@ -208,20 +207,19 @@ class Lexer():
         self.currentPosition -= 1
         self.col -= 1         
         if self.bufferedWord.lower() == "true":
-          self.Tokens.append(f"<True, {self.tokenBeginsRow}, {self.tokenBeginsCol}>")
+          self.Output["tokens"].append(f"<True, {self.tokenBeginsRow}, {self.tokenBeginsCol}>")
         elif self.bufferedWord.lower() == "false":
-          self.Tokens.append(f"<False, {self.tokenBeginsRow}, {self.tokenBeginsCol}>")
+          self.Output["tokens"].append(f"<False, {self.tokenBeginsRow}, {self.tokenBeginsCol}>")
         else:
-          self.Tokens.append(f"<tkn_text, {self.bufferedWord}, {self.tokenBeginsRow}, {self.tokenBeginsCol}>")
+          self.Output["tokens"].append(f"<tkn_text, {self.bufferedWord}, {self.tokenBeginsRow}, {self.tokenBeginsCol}>")
         self.bufferedWord = "" 
 
-    def printTokens(self):    
-      if self.lexError:  
-        lastToken = self.Tokens[-2]
-        secondLastToken = self.Tokens[-1]
-        self.Tokens[-2] = secondLastToken
-        self.Tokens[-1] = lastToken
-      for i in range(len(self.Tokens)-1):
-        print(self.Tokens[i])
-      if len(self.Tokens) > 0:
-        print(self.Tokens[len(self.Tokens)-1])
+    def printTokens(self):   
+      
+      for i in range(len(self.Output["tokens"])-1):
+        print(self.Output["tokens"][i])
+      if len(self.Output["tokens"]) > 0:
+        print(self.Output["tokens"][len(self.Output["tokens"])-1],end="")
+      
+      if self.Output["error"] != "":
+        print(f"\n{self.Output['error']}")
