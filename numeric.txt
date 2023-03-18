@@ -1,7 +1,2 @@
-mama = 12545
-_a23 = 2142
-<> = = < <> >=<< asd
-
-my_Var1 = +05
-my_Var_2 = -3.330
-
+True = "true"
+var2 = "False"

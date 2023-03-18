@@ -1,7 +1,20 @@
-variable = 1
-Variable = -50
-vAriable = 3.23
-años = 10
-MiNombre = "David"
-paraNada20 = "False"
-vida_de_Ángel = 20.908
+infiniteLoop:
+
+a = 0
+
+For i = a To 5
+  TextWindow.Write(i)
+  TextWindow.WriteLine(" es un numero.")
+EndFor
+
+Goto infiniteLoop
+
+
+mama = 1.2545
+_a23 = 2142
+<> = = < <> >=<< asd
+
+text: =  "text"
+my_Var1 = +05
+my_Var_2 = -3.330
+  
