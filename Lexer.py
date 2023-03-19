@@ -34,7 +34,7 @@ class Lexer():
       self.row = 1  
       with open(self.textLocation, 'r' , encoding='utf-8') as f:
         visitedLineEnds = set({})
-        while True:          
+        while True and self.lexError == False:          
           char = f.read(1)          
           self.currentPosition += 1
           if not char:
