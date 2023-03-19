@@ -1,8 +1,0 @@
-my_Var1 = +05
-my_Var_2 = -3.330
-
-If x >= 20 Then
-   TextWindow.WriteLine("Large")
-ElseIf x <= 10 Then
-   TextWindow.WriteLine("Small")
-EndIf
