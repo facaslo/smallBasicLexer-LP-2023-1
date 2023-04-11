@@ -1,4 +1,7 @@
 import sys
+import collections
+
+numberIter = 10000
 
 def read_input():
     """
@@ -99,10 +102,10 @@ def compute_firsts_sets(terminal_symbols, non_terminal_symbols, grammar_dict):
             
 
     # Find the first elements that are not terminals
-    changed = True   
-    while changed:
+    counter = 0
+    while counter < numberIter:
 
-      changed = False      
+      
       for nonTerminal , rules in grammar_dict.items():
         for rule in rules:
           firstSymbol = rule[0] 
@@ -120,10 +123,10 @@ def compute_firsts_sets(terminal_symbols, non_terminal_symbols, grammar_dict):
                                       
             if len(derivation_first_set) > 0 and not (derivation_first_set-{"epsilon"}).issubset(first_sets[nonTerminal]):
               first_sets[nonTerminal] |= derivation_first_set - {"epsilon"}
-              changed = True
+              
               if (hasEpsilon):
                 first_sets[nonTerminal] |= {"epsilon"}    
-         
+      counter += 1
 
     return first_sets
 
@@ -157,6 +160,7 @@ def compute_rules_firsts(first_sets, terminal_symbols, non_terminal_symbols, gra
       rules_firsts[ruleKey] = rules_firsts_set
   return rules_firsts
 
+'''
 def compute_follows_sets(first_sets , terminal_symbols, non_terminal_symbols, grammar_dict , startingSymbol):  
   firstSets = first_sets  
   followingSet = {}
@@ -189,13 +193,50 @@ def compute_follows_sets(first_sets , terminal_symbols, non_terminal_symbols, gr
 
   return followingSet        
 
+'''
+
+def compute_follows_sets( first_sets, terminal_symbols, non_terminal_symbols, grammar_dict, startingSymbol):
+  followingSets = {}
+  
+  # Initialize the FIRST sets for all non-terminal symbols to the empty set
+  for symbol in non_terminal_symbols:
+      followingSets[symbol] = set({})
+  
+  followingSets[startingSymbol] |= {"$"}
+
+  
+  
+  counter = 0
+  while counter < numberIter:    
+    
+    
+    for nonTerminal in non_terminal_symbols:
+      for leftHandSymbol , rules in grammar_dict.items():
+        for rule in rules:
+          for i in range(len(rule)):
+            if rule[i] == nonTerminal:
+              beta = " ".join(rule[i+1:len(rule)]) if i < len(rule)-1 else "epsilon"
+              toAdd = compute_rule_first_set(first_sets, terminal_symbols, non_terminal_symbols, beta) 
+              if (not((toAdd - {"epsilon"}).issubset(followingSets[nonTerminal])) and len(toAdd)>0):
+                
+                followingSets[nonTerminal] |= (toAdd - {"epsilon"})
+              if "epsilon" in toAdd or beta=="epsilon":                
+                followingSets[nonTerminal] |= followingSets[leftHandSymbol]
+    
+    counter += 1
+  return followingSets
+
+
+  
+  
+
 def compute_rule_prediction_set(rules_firsts_set,follows_sets, rule):
   leftHandSymbol = rule.strip().split(" -> ")[0].strip()  
   if "epsilon" in rules_firsts_set[rule]:
     return (rules_firsts_set[rule] - {"epsilon"}) | follows_sets[leftHandSymbol]
   else:
     return rules_firsts_set[rule]
-
+  
 def compute_rules_predictions(compute_rules_firsts_set,compute_follows_sets,grammar_dict):
   rules_predictions_set = {}
   for nonTerminal, rules in grammar_dict.items():
@@ -204,6 +245,24 @@ def compute_rules_predictions(compute_rules_firsts_set,compute_follows_sets,gram
       predictionSet = compute_rule_prediction_set(compute_rules_firsts_set,compute_follows_sets,ruleString)
       rules_predictions_set[ruleString] = predictionSet
   return rules_predictions_set
+
+def isLL1(predictionsSet, grammar_dict):  
+  elements = [[key.strip().split("->")[0].strip(), value]  for key, value in predictionsSet.items()]
+  joinedSets = {}
+  ll1 = True
+  for i in range(len(elements)):
+    nonTerminal = elements[i][0]
+    currentPredictionSet = elements[i][1]
+    if not (nonTerminal in joinedSets.keys()):
+      joinedSets[nonTerminal] = currentPredictionSet
+    elif joinedSets[nonTerminal].intersection(currentPredictionSet):
+      ll1 = False
+      break
+    else:
+      joinedSets[nonTerminal] |= currentPredictionSet
+  return ll1
+
+  print(Elements)
 
 def main():
   readed = read_input()
@@ -242,6 +301,7 @@ def main():
     print(key , value)
   print()
 
+  print(isLL1(predictions,grammar_dict))
   '''
   result4 = compute_rule_first_set(result2, result[0],result[1], "B C")
   print(result4)
