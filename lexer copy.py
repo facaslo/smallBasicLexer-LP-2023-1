@@ -9,7 +9,7 @@ def isFloat(number):
     return False
 
 class Lexer():
-########################################################################################################
+
     def __init__(self, location):
       self.states = {0,1,2,3,4,5,6,7,8,9,10,11,12}
       self.finalStates = {3,4,7,9,12}
@@ -18,25 +18,24 @@ class Lexer():
       self.symbols = {"+": "tkn_plus" ,"-": "tkn_minus" , "*": "tkn_times", "/": "tkn_div", "=": "tkn_equals", "<": "tkn_less", ">": "tkn_greater" , "<=": "tkn_leq" , ">=": "tkn_geq" , "<>": "tkn_diff", ".": "tkn_period", ",": "tkn_comma" , ":": "tkn_colon", "[": "tkn_left_brac" , "]": "tkn_right_brac", "(": "tkn_left_paren" , ")": "tkn_right_paren"}
       self.reservedWords = {'Stack','Program','Else', 'ElseIf', 'EndFor', 'EndIf', 'EndSub', 'EndWhile', 'For', 'Goto', 'If', 'Step', 'Sub', 'Then', 'To', 'While', 'And', 'Or', 'TextWindow', 'Array' }      
 
-      self.inputList = list(sys.stdin)
-      copyOfList = self.inputList.copy()
-      self.inputText = "".join(copyOfList).replace("\r", "")
+      self.inputList = sys.stdin
+      self.inputText = "".join(self.inputList)
 
       self.textLocation = location
       self.bufferedWord = ''      
       self.currentPosition = 0
       self.col = 0
-      self.row = 1
+      self.row = 0
       self.comment = False
       self.lexError = False
       self.tokenBeginsRow = 0
       self.tokenBeginsCol = 0
       self.Output = {"tokens":[], "error": ""}
-      self.visitedLineEnds = set({})
-########################################################################################################    
-    def readFile(self):                
+    
+    def readFile(self):          
+      self.row = 1  
       with open(self.textLocation, 'r' , encoding='utf-8') as f:
-        
+        visitedLineEnds = set({})
         while True:          
           char = f.read(1)          
           self.currentPosition += 1
@@ -45,8 +44,8 @@ class Lexer():
           if char == "'":
             self.comment = True
           elif char == '\n':
-            if not(self.currentPosition in self.visitedLineEnds):              
-              self.visitedLineEnds.add(self.currentPosition)  
+            if not(self.currentPosition in visitedLineEnds):              
+              visitedLineEnds.add(self.currentPosition)  
               self.row += 1          
             self.col = 0 
             self.comment = False
@@ -57,9 +56,8 @@ class Lexer():
           # Update pointer position
           f.seek(self.currentPosition,0)      
       self.transition_state_func('EOF') 
-########################################################################################################    
+
     def readStream(self):
-      self.row = 0
       for line in self.inputList:
         '''
         if 'Exit' == line.rstrip():           
@@ -79,55 +77,13 @@ class Lexer():
           #print(f"char_b:{line[self.col-1]} - state_b:{self.currentState} - buffer_b:{self.bufferedWord} - row_b:{self.row} - col_b:{self.col}")                
           self.col += 1          
       self.transition_state_func('EOF')
-########################################################################################################
+
     def readNextToken(self):
-
       text = self.inputText
-      tokenList = self.Output["tokens"]      
-      lastToken =  tokenList[-1] if len(tokenList) > 0 else None    
-
-      while self.currentPosition < len(text):
-
-        currentLastToken =  tokenList[-1] if len(tokenList) > 0 else None 
-        if currentLastToken != lastToken:
-          return currentLastToken
-
-        currentCharacter = text[self.currentPosition]
+      for position in range(self.currentPosition,len(text)):        
+        #print(text[position].encode() , position)
         self.currentPosition += 1
-        
-        if currentCharacter == "'":
-          self.comment = True        
-
-        else:
-          self.col += 1          
-          if not self.comment:
-            self.transition_state_func(currentCharacter) 
-        
-        if currentCharacter == "\n":
-          if not(self.currentPosition in self.visitedLineEnds):              
-            self.visitedLineEnds.add(self.currentPosition)  
-            self.row += 1       
-            self.col = 0 
-          self.comment = False
-        
-      if self.currentPosition == len(text) or self.lexError:
-        self.transition_state_func('EOF') 
-        currentLastToken =  tokenList[-1] if len(tokenList) > 0 else None   
-        if currentLastToken != lastToken:           
-          return tokenList[-1] if len(tokenList) > 0 else None    
       
-      return None
-########################################################################################################    
-    def returnLexError(self):
-      if self.lexError:
-        return self.Output["error"]
-      return None
-########################################################################################################
-    def printText(self):
-      for char in self.inputText:
-        print(char.encode())
-
-########################################################################################################
     def transition_state_func(self, char):
       
       if (not(char in self.symbols.keys() or re.search('[À-ž]|[A-Z]|[a-z]|ñ|ç|_|[^\x00-\x7F]', char) != None or char.isnumeric() or char in set({"\r", "\n" , "\t" , " ", "'", "\""})) and not(self.currentState == 8 or self.currentState == 9)) or (char=="_" and self.currentState==0):                    
@@ -135,7 +91,6 @@ class Lexer():
           self.lexError = True
           return
       
-      # What to do when EOF
       elif (char == 'EOF' or self.lexError) and self.bufferedWord != "":         
       
         if self.currentState == 2 or self.currentState == 3:          
@@ -143,7 +98,10 @@ class Lexer():
 
         if self.currentState == 1 or self.currentState == 5:
           if self.bufferedWord.isnumeric() or isFloat(self.bufferedWord):
-            self.Output["tokens"].append(f"<tkn_number, {self.bufferedWord}, {self.tokenBeginsRow}, {self.tokenBeginsCol}>")        
+            self.Output["tokens"].append(f"<tkn_number, {self.bufferedWord}, {self.tokenBeginsRow}, {self.tokenBeginsCol}>")
+          else:
+            self.Output["tokens"].append(f"<tkn_number, {self.bufferedWord[0:len(self.bufferedWord)-1]}, {self.tokenBeginsRow}, {self.tokenBeginsCol}>")
+            self.Output["tokens"].append(f"<tkn_period, {self.row}, {self.col - 1}>")
 
         elif self.currentState == 6:
           if self.bufferedWord in self.reservedWords:
@@ -165,7 +123,6 @@ class Lexer():
           else:
             self.Output["tokens"].append(f"<tkn_text, {self.bufferedWord}, {self.tokenBeginsRow}, {self.tokenBeginsCol}>")
 
-      # States transitions
       elif self.currentState == 0:                
         if char in self.symbols.keys():    
           self.tokenBeginsRow = self.row      
