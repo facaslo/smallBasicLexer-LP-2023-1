@@ -1,10 +1,3 @@
-<style>
-  img{
-    background-color: white;
-  }
-</style>
-
-
 # Introduction
 The following small Basic lexical analizer was built for the programming languages course from the Universidad Nacional de Colombia.
 This implementation is based on the following automata 

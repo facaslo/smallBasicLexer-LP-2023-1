@@ -24,7 +24,7 @@ class Lexer():
 
       self.textLocation = location
       self.bufferedWord = ''      
-      self.currentPosition = 0
+      self.currentPosition = 0      
       self.col = 0
       self.row = 1
       self.comment = False
@@ -86,35 +86,40 @@ class Lexer():
       tokenList = self.Output["tokens"]      
       lastToken =  tokenList[-1] if len(tokenList) > 0 else None    
 
-      while self.currentPosition < len(text):
-
+      while self.currentPosition < len(text) and self.lexError == False:
+        
+        originalPosition = self.currentPosition
         currentLastToken =  tokenList[-1] if len(tokenList) > 0 else None 
         if currentLastToken != lastToken:
           return currentLastToken
 
-        currentCharacter = text[self.currentPosition]
-        self.currentPosition += 1
-        
-        if currentCharacter == "'":
-          self.comment = True        
+        currentCharacter = text[self.currentPosition]                
+        self.col += 1
 
-        else:
-          self.col += 1          
+        if (not self.comment) and currentCharacter == "'" and not(self.currentState==8 or self.currentState==9 ):
+          self.comment = True                            
+
+        else:       
           if not self.comment:
             self.transition_state_func(currentCharacter) 
         
-        if currentCharacter == "\n":
-          if not(self.currentPosition in self.visitedLineEnds):              
-            self.visitedLineEnds.add(self.currentPosition)  
-            self.row += 1       
-            self.col = 0 
-          self.comment = False
+        if currentCharacter == "\n":  
+          if originalPosition not in self.visitedLineEnds:                                       
+                  
+            self.visitedLineEnds.add(originalPosition)  
+            self.row += 1
+
+          self.col = 0
+          self.comment  = False       
+                  
+          
+        self.currentPosition += 1
         
       if self.currentPosition == len(text) or self.lexError:
         self.transition_state_func('EOF') 
         currentLastToken =  tokenList[-1] if len(tokenList) > 0 else None   
-        if currentLastToken != lastToken:           
-          return tokenList[-1] if len(tokenList) > 0 else None    
+        if currentLastToken != lastToken and currentLastToken != None:              
+          return currentLastToken
       
       return None
 ########################################################################################################    
@@ -135,37 +140,37 @@ class Lexer():
           self.lexError = True
           return
       
-      # What to do when EOF
-      elif (char == 'EOF' or self.lexError) and self.bufferedWord != "":         
+      elif (char == 'EOF' or self.lexError):
+        if (self.bufferedWord != ""):
+          if self.currentState == 2 or self.currentState == 3:          
+            self.Output["tokens"].append(f"<{self.symbols[self.bufferedWord]}, {self.tokenBeginsRow}, {self.tokenBeginsCol}>")
+
+          if self.currentState == 1 or self.currentState == 5:
+            if self.bufferedWord.isnumeric() or isFloat(self.bufferedWord):
+              self.Output["tokens"].append(f"<tkn_number, {self.bufferedWord}, {self.tokenBeginsRow}, {self.tokenBeginsCol}>")        
+
+          elif self.currentState == 6:
+            if self.bufferedWord in self.reservedWords:
+              self.Output["tokens"].append(f"<{self.bufferedWord}, {self.tokenBeginsRow}, {self.tokenBeginsCol}>")
+            else:
+              self.Output["tokens"].append(f"<id, {self.bufferedWord}, {self.tokenBeginsRow}, {self.tokenBeginsCol}>")
+
+          elif self.currentState == 8:
+            if self.bufferedWord[-1] != "\"":
+              self.Output['error'] = f">>> Error lexico (Linea: {self.tokenBeginsRow}, Posicion: {self.tokenBeginsCol})"
+              self.lexError = True
+              return
+
+          elif self.currentState == 9:
+            if self.bufferedWord.lower() == "true":
+              self.Output["tokens"].append(f"<True, {self.tokenBeginsRow}, {self.tokenBeginsCol}>")
+            elif self.bufferedWord.lower() == "false":
+              self.Output["tokens"].append(f"<False, {self.tokenBeginsRow}, {self.tokenBeginsCol}>")          
+            else:
+              self.Output["tokens"].append(f"<tkn_text, {self.bufferedWord}, {self.tokenBeginsRow}, {self.tokenBeginsCol}>")
+          
+             
       
-        if self.currentState == 2 or self.currentState == 3:          
-          self.Output["tokens"].append(f"<{self.symbols[self.bufferedWord]}, {self.tokenBeginsRow}, {self.tokenBeginsCol}>")
-
-        if self.currentState == 1 or self.currentState == 5:
-          if self.bufferedWord.isnumeric() or isFloat(self.bufferedWord):
-            self.Output["tokens"].append(f"<tkn_number, {self.bufferedWord}, {self.tokenBeginsRow}, {self.tokenBeginsCol}>")        
-
-        elif self.currentState == 6:
-          if self.bufferedWord in self.reservedWords:
-            self.Output["tokens"].append(f"<{self.bufferedWord}, {self.tokenBeginsRow}, {self.tokenBeginsCol}>")
-          else:
-            self.Output["tokens"].append(f"<id, {self.bufferedWord}, {self.tokenBeginsRow}, {self.tokenBeginsCol}>")
-
-        elif self.currentState == 8:
-          if self.bufferedWord[-1] != "\"":
-            self.Output['error'] = f">>> Error lexico (Linea: {self.tokenBeginsRow}, Posicion: {self.tokenBeginsCol})"
-            self.lexError = True
-            return
-
-        elif self.currentState == 9:
-          if self.bufferedWord.lower() == "true":
-           self.Output["tokens"].append(f"<True, {self.tokenBeginsRow}, {self.tokenBeginsCol}>")
-          elif self.bufferedWord.lower() == "false":
-            self.Output["tokens"].append(f"<False, {self.tokenBeginsRow}, {self.tokenBeginsCol}>")          
-          else:
-            self.Output["tokens"].append(f"<tkn_text, {self.bufferedWord}, {self.tokenBeginsRow}, {self.tokenBeginsCol}>")
-
-      # States transitions
       elif self.currentState == 0:                
         if char in self.symbols.keys():    
           self.tokenBeginsRow = self.row      
