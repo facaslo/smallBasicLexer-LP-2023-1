@@ -1,0 +1,4 @@
+uno,dos,tres,cuatro,cinco,seis,epsilon
+S,A,B,C,D
+S -> A B uno, A -> dos B | epsilon, B -> C D | tres | epsilon, C -> cuatro A B | cinco ,  D -> seis | epsilon
+S

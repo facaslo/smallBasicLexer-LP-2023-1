@@ -1,0 +1,4 @@
+bad,big,boss,bet,cat,cow,epsilon
+A,B,C
+A -> B C | bad, B -> big C boss | bet , C -> cat | cow
+A

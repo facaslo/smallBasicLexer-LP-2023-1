@@ -1,0 +1,26 @@
+<id, infiniteLoop, 1, 1>
+<tkn_colon, 1, 13>
+<id, a, 3, 1>
+<tkn_equals, 3, 3>
+<tkn_number, 0, 3, 5>
+<For, 5, 1>
+<id, i, 5, 5>
+<tkn_equals, 5, 7>
+<id, a, 5, 9>
+<To, 5, 11>
+<tkn_number, 5, 5, 14>
+<TextWindow, 6, 3>
+<tkn_period, 6, 13>
+<id, Write, 6, 14>
+<tkn_left_paren, 6, 19>
+<id, i, 6, 20>
+<tkn_right_paren, 6, 21>
+<TextWindow, 7, 3>
+<tkn_period, 7, 13>
+<id, WriteLine, 7, 14>
+<tkn_left_paren, 7, 23>
+<tkn_text,  es un número., 7, 24>
+<tkn_right_paren, 7, 40>
+<EndFor, 8, 1>
+<Goto, 10, 1>
+<id, infiniteLoop, 10, 6>

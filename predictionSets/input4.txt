@@ -1,0 +1,4 @@
+ant,all,big,bus,boss,epsilon,cat,cow
+A,B,C
+A -> B C | ant A all , B -> big C | bus A boss | epsilon , C -> cat | cow
+A

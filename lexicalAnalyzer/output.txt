@@ -1,0 +1,7 @@
+<id, my_Var1, 1, 1>
+<tkn_equals, 1, 9>
+<tkn_plus, 1, 11>
+<tkn_number, 05, 1, 12>
+<id, my_Var_2, 2, 1>
+<tkn_equals, 2, 10>
+<tkn_minus, 2, 12>

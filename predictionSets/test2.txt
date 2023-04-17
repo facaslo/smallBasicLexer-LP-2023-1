@@ -1,0 +1,4 @@
+epsilon,+,-,*,/,id,num,=,\n
+P,S,E,EP,T,TP,F
+P -> S \n P | S , S -> id = E | E , E -> T EP, EP -> + T EP | - T EP | epsilon , T -> F TP, TP -> * F TP | / F TP | epsilon , F -> (E) | num
+P
