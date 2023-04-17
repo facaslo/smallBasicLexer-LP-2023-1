@@ -670,9 +670,6 @@ S'''
     if tokenFields["type"] in {"id", "text"}:
       tokenFields["value"] = tokenFieldsList[1].strip()
     return tokenFields
-  
- 
-  
    
 a = syntaxAnalizer()
 a.nonTerminal(a.grammar["Starting symbol"])
