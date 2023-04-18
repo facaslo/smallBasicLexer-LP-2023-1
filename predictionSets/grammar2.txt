@@ -1,0 +1,4 @@
+id,tkn_number,tkn_plus,tkn_minus,tkn_times,tkn_div,tkn_equals,tkn_left_paren,tkn_right_paren,epsilon
+S,A,AP,B,BP,C,D
+S -> D A , A -> B AP | tkn_left_paren B AP tkn_right_paren , AP -> tkn_plus B AP |  tkn_minus B AP | epsilon , B -> C BP , BP ->  tkn_times C BP | tkn_div C BP | epsilon , C -> tkn_number , D -> id tkn_equals | epsilon
+S

@@ -587,8 +587,8 @@ class syntaxAnalizer():
     self.consoleInput = storeConsoleInput()
     self.lex = Lexer(self.consoleInput)
     self.grammarString = '''id,tkn_number,tkn_plus,tkn_minus,tkn_times,tkn_div,tkn_equals,tkn_left_paren,tkn_right_paren,epsilon
-S,A,B,C,D,BP,CP
-S -> A | B, A -> id tkn_equals B , B -> C BP , BP -> tkn_plus C BP | tkn_minus C BP | epsilon, C -> D CP, CP -> tkn_times D CP | tkn_div D CP | epsilon, D -> tkn_left_paren B tkn_right_paren | tkn_number 
+S,A,AP,B,BP,C,D
+S -> D A , A -> B AP | tkn_left_paren B AP tkn_right_paren , AP -> tkn_plus B AP |  tkn_minus B AP | epsilon , B -> C BP , BP ->  tkn_times C BP | tkn_div C BP | epsilon , C -> tkn_number , D -> id tkn_equals | epsilon
 S''' 
         
     self.grammar = returnInfo(self.grammarString)        
@@ -624,7 +624,7 @@ S'''
     for rule,predictionSet in predictionsForNT.items():            
       if self.token["type"] in predictionSet:
         tokenInPredictionSet = True
-        #print(rule ," ---- " ,self.token, " ---- " , self.predictionSets[rule])
+        print(rule ," ---- " ,self.token, " ---- " , self.predictionSets[rule])
         ruleSymbolsList = []
         for symbol in rule.split("->")[1:][0].strip().split(" "):
           ruleSymbolsList.append(symbol)
@@ -652,7 +652,7 @@ S'''
   
   def checkEOF(self):
     if self.token["type"] != "$" and self.syntaxError == False:
-      print(f"Error sintáctico EOF")
+      print(f"No hay errores sintácticos")
 
   def getPredictionsForNT(self, nonTerminal):    
     predictionForNT = {}
