@@ -586,10 +586,10 @@ class syntaxAnalizer():
   def __init__(self):
     self.consoleInput = storeConsoleInput()
     self.lex = Lexer(self.consoleInput)
-    self.grammarString = '''id,tkn_number,tkn_plus,tkn_minus,tkn_times,tkn_div,tkn_equals,tkn_left_paren,tkn_right_paren,epsilon
-S,A,AP,B,BP,C,D
-S -> D A , A -> B AP | tkn_left_paren B AP tkn_right_paren , AP -> tkn_plus B AP |  tkn_minus B AP | epsilon , B -> C BP , BP ->  tkn_times C BP | tkn_div C BP | epsilon , C -> tkn_number , D -> id tkn_equals | epsilon
-S''' 
+    self.grammarString = '''tkn_plus,tkn_minus,tkn_div,tkn_times,epsilon,tkn_left_paren,tkn_right_paren,tkn_number,id
+Expr,RestExpr,Term,RestTerm,Factor,Number,RestNumber,Digit,Identifier,RestIdentifier,Variable
+Expr -> Term RestExpr , RestExpr -> tkn_plus Term RestExpr | tkn_minus Term RestExpr | epsilon , Term -> Factor RestTerm , RestTerm -> tkn_times Factor RestTerm | tkn_div Factor RestTerm | epsilon , Factor -> tkn_left_paren Expr tkn_right_paren | Number | Identifier , Number -> Digit RestNumber , RestNumber -> Digit RestNumber | epsilon , Digit -> tkn_number , Identifier -> Variable RestIdentifier , RestIdentifier -> Variable RestIdentifier | epsilon ,  Variable -> id
+Expr''' 
         
     self.grammar = returnInfo(self.grammarString)        
     #print( self.grammar["Prediction sets"]  )
@@ -629,30 +629,37 @@ S'''
         for symbol in rule.split("->")[1:][0].strip().split(" "):
           ruleSymbolsList.append(symbol)
         #ruleSymbolsList = [symbol.strip() for symbol in rule.split("->")[1:][0].strip().split(" ")]
-        if not(ruleSymbolsList == ["epsilon"]):
-          for ruleSymbol in ruleSymbolsList:          
-            if ruleSymbol in self.grammar["Terminal symbols"]:          
-              #print("Terminal:", symbol)          
-              self.pairing(ruleSymbol)
-            elif ruleSymbol in self.grammar["Non terminal symbols"]:
-              #print("Non terminal:", symbol)
-              self.nonTerminal(ruleSymbol)                      
+        #if not(ruleSymbolsList == ["epsilon"]):
+        for ruleSymbol in ruleSymbolsList:          
+          if ruleSymbol in self.grammar["Terminal symbols"]:          
+            #print("Terminal:", symbol)          
+            self.pairing(ruleSymbol)
+          elif ruleSymbol in self.grammar["Non terminal symbols"]:
+            #print("Non terminal:", symbol)
+            self.nonTerminal(ruleSymbol)
+              
+          
     
     if not(tokenInPredictionSet):
       self.syntaxError = True
       print(f"Error sintáctico, se esperaba {[j for i in list(predictionsForNT.values()) for j in i]} , se encontró {self.token['type']}")        
   
   def pairing(self, expectedToken):    
-    if not self.syntaxError:
+    if not self.syntaxError and expectedToken != "epsilon":      
       if self.token["type"] == expectedToken:
         self.readNextToken()        
       else:
         self.syntaxError = True
-        print(f"Error sintáctico en {self.token['row']},{self.token['col']} , se esperaba {expectedToken}, se obtuvo {self.token['type']}")
+        if self.token['type'] != '$':        
+          print(f"Error sintáctico en {self.token['row']},{self.token['col']} , se esperaba {expectedToken}, se obtuvo {self.token['type']}")
+        else:
+          print(f"Error sintáctico , se esperaba {expectedToken}, se obtuvo {self.token['type']}")
   
   def checkEOF(self):
-    if self.token["type"] != "$" and self.syntaxError == False:
+    if self.token["type"] == "$" and self.syntaxError == False:
       print(f"No hay errores sintácticos")
+    else:
+      print("Esta cadena no es aceptada")
 
   def getPredictionsForNT(self, nonTerminal):    
     predictionForNT = {}
