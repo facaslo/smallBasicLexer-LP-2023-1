@@ -1,1 +1,7 @@
-a b
+variable = 1 
+Variable = ((-50) + 75) / 2
+vAriable = 3.23
+años = 10
+variable20 = "Amigo" + "Hola"
+paraNada20 = "False" Or "True"
+vida_de_Ángel = 20.908 +

@@ -34,30 +34,7 @@ class Lexer():
       self.tokenBeginsCol = 0
       self.Output = {"tokens":[], "error": ""}
       self.visitedLineEnds = set({})
-########################################################################################################    
-    # def readFile(self):                
-    #   with open(self.textLocation, 'r' , encoding='utf-8') as f:
-        
-    #     while True:          
-    #       char = f.read(1)          
-    #       self.currentPosition += 1
-    #       if not char:
-    #         break          
-    #       if char == "'":
-    #         self.comment = True
-    #       elif char == '\n':
-    #         if not(self.currentPosition in self.visitedLineEnds):              
-    #           self.visitedLineEnds.add(self.currentPosition)  
-    #           self.row += 1          
-    #         self.col = 0 
-    #         self.comment = False
-    #       else:
-    #         self.col += 1          
-    #         if not self.comment:
-    #           self.transition_state_func(char)                   
-    #       # Update pointer position
-    #       f.seek(self.currentPosition,0)      
-    #   self.transition_state_func('EOF') 
+
 ########################################################################################################    
     def readStream(self):
       self.row = 0
@@ -414,41 +391,6 @@ def compute_rules_firsts(first_sets, terminal_symbols, non_terminal_symbols, gra
       rules_firsts[ruleKey] = rules_firsts_set
   return rules_firsts
 
-'''
-def compute_follows_sets(first_sets , terminal_symbols, non_terminal_symbols, grammar_dict , startingSymbol):  
-  firstSets = first_sets  
-  followingSet = {}
-  # Initialize the FIRST sets for all terminal symbols
-  for symbol in terminal_symbols:        
-      followingSet[symbol] = {symbol}
-
-  # Initialize the FIRST sets for all non-terminal symbols to the empty set
-  for symbol in non_terminal_symbols:
-      followingSet[symbol] = set({})
-  
-  followingSet[startingSymbol].add("$")
-
-  changed = True
-  while changed:    
-    changed = False
-    for nonTerminal in non_terminal_symbols:
-      for leftHandSymbol , rules in grammar_dict.items():
-        for rule in rules:
-          for i in range(len(rule)):
-            if rule[i] == nonTerminal:
-              next = rule[i+1] if i < len(rule)-1 else "epsilon" 
-              toAdd = firstSets[next] - {"epsilon"}
-              if not(toAdd.issubset(followingSet[nonTerminal])) and len(toAdd)>0:
-                changed = True
-                followingSet[nonTerminal] |= toAdd
-              if "epsilon" in firstSets[next] and len(followingSet[leftHandSymbol]) > 0 and not followingSet[leftHandSymbol].issubset(followingSet[nonTerminal]) :
-                changed = True
-                followingSet[nonTerminal] |= followingSet[leftHandSymbol]
-
-  return followingSet        
-
-'''
-
 def compute_follows_sets( first_sets, terminal_symbols, non_terminal_symbols, grammar_dict, startingSymbol):
   followingSets = {}
   
@@ -586,19 +528,20 @@ class syntaxAnalizer():
   def __init__(self):
     self.consoleInput = storeConsoleInput()
     self.lex = Lexer(self.consoleInput)
-    self.grammarString = '''tkn_plus,tkn_minus,tkn_div,tkn_times,epsilon,tkn_left_paren,tkn_right_paren,tkn_number,id
-Expr,RestExpr,Term,RestTerm,Factor,Number,RestNumber,Digit,Identifier,RestIdentifier,Variable
-Expr -> Term RestExpr , RestExpr -> tkn_plus Term RestExpr | tkn_minus Term RestExpr | epsilon , Term -> Factor RestTerm , RestTerm -> tkn_times Factor RestTerm | tkn_div Factor RestTerm | epsilon , Factor -> tkn_left_paren Expr tkn_right_paren | Number | Identifier , Number -> Digit RestNumber , RestNumber -> Digit RestNumber | epsilon , Digit -> tkn_number , Identifier -> Variable RestIdentifier , RestIdentifier -> Variable RestIdentifier | epsilon ,  Variable -> id
-Expr''' 
+    self.grammarString = '''tkn_plus,tkn_minus,tkn_times,tkn_div,tkn_equals,tkn_less,tkn_greater,tkn_leq,tkn_geq,tkn_diff,tkn_period,tkn_comma,tkn_colon,tkn_left_brac,tkn_right_brac,tkn_left_paren,tkn_right_paren,Stack,Program,Else,ElseIf,EndFor,EndIf,EndSub,EndWhile,For,Goto,If,Step,Sub,Then,To,While,And,Or,TextWindow,Array,True,False,tkn_number,tkn_text,id,epsilon
+Assign,AssignP,Expr,RestExpr,Term,RestTerm,Factor,LExpr,RestLExpr,lValue,CValue,CValueP,RestCvalue,RestCValue2,LVariable,LDigit,TruthValue,RestFactor,TextValue,TExpr,RestTExpr,TValue
+Assign -> id tkn_equals TExpr Assign | epsilon,TExpr -> TValue RestTExpr ,RestTExpr -> tkn_plus TValue RestTExpr  | epsilon,TValue -> TextValue | LExpr,LExpr ->  lValue RestLExpr,RestLExpr -> Or lValue RestLExpr | And lValue RestLExpr | epsilon,lValue -> TruthValue | CValue ,CValue -> Expr RestCvalue,RestCvalue -> tkn_less Expr | tkn_leq Expr  | tkn_greater Expr | tkn_geq Expr | tkn_diff Expr | epsilon, Expr -> Term RestExpr,RestExpr -> tkn_minus Term RestExpr | epsilon , Term -> Factor RestTerm , RestTerm -> tkn_times Factor RestTerm | tkn_div Factor RestTerm | epsilon , Factor -> tkn_minus RestFactor | RestFactor,RestFactor -> tkn_number | id | tkn_left_paren TExpr tkn_right_paren,TruthValue -> True | False ,TextValue -> tkn_text
+Assign
+''' 
         
     self.grammar = returnInfo(self.grammarString)        
     #print( self.grammar["Prediction sets"]  )
     #print()
-    grammarSet = set()
+    grammarSet = []
     for key, value in self.grammar["Grammar"].items():        
         for i in range(len(value)):
           output = key + " -> " + " ".join(value[i])          
-          grammarSet.add(output)
+          grammarSet.append(output)
     
     self.grammar["Grammar"] = grammarSet    
 
@@ -606,6 +549,8 @@ Expr'''
     self.predictionSets = self.grammar["Prediction sets"]    
     self.readNextToken()    
     self.syntaxError = False
+    self.lastRule = None
+    self.MultilineSentence = False
     
     #print(self.grammar["Is LL1"])
     #print(self.predictionSets)
@@ -615,15 +560,16 @@ Expr'''
     if nextToken != None:
       self.token = self.parseTokenInfo(nextToken) 
     else:
-      self.token = {"type" : "$"}    
+      self.token = {"type" : "$" , "row": self.lex.row , "col": self.lex.col + 1}    
 
-  def nonTerminal(self , nonTerminalSymbol): 
+  def nonTerminal(self , nonTerminalSymbol):    
    if not(self.syntaxError):
     predictionsForNT = self.getPredictionsForNT(nonTerminalSymbol)   
     tokenInPredictionSet = False
     for rule,predictionSet in predictionsForNT.items():            
-      if self.token["type"] in predictionSet:
+      if self.token["type"] in predictionSet and tokenInPredictionSet==False:
         tokenInPredictionSet = True
+        self.lastRule  = (rule ," ---- " ,self.token, " ---- " , self.predictionSets[rule])
         print(rule ," ---- " ,self.token, " ---- " , self.predictionSets[rule])
         ruleSymbolsList = []
         for symbol in rule.split("->")[1:][0].strip().split(" "):
@@ -640,9 +586,14 @@ Expr'''
               
           
     
-    if not(tokenInPredictionSet):
+    if not(tokenInPredictionSet): 
       self.syntaxError = True
-      print(f"Error sintáctico, se esperaba {[j for i in list(predictionsForNT.values()) for j in i]} , se encontró {self.token['type']}")        
+      if self.token["type"] != "$":      
+        print(f"Error sintáctico en row: {self.token['row']} col: {self.token['col']}, se esperaba {[j for i in list(predictionsForNT.values()) for j in i]} , se encontró {self.token['type']}")          
+        print(self.lastRule)  
+      else:
+        print(f"Error sintáctico en en row: {self.token['row']} col: {self.token['col']}, se esperaba {[j for i in list(predictionsForNT.values()) for j in i]} , se encontró {self.token['type']}")     
+        print((rule ," ---- " ,self.token, " ---- " , self.predictionSets[rule]))     
   
   def pairing(self, expectedToken):    
     if not self.syntaxError and expectedToken != "epsilon":      
@@ -656,10 +607,13 @@ Expr'''
           print(f"Error sintáctico , se esperaba {expectedToken}, se obtuvo {self.token['type']}")
   
   def checkEOF(self):
-    if self.token["type"] == "$" and self.syntaxError == False:
-      print(f"No hay errores sintácticos")
-    else:
-      print("Esta cadena no es aceptada")
+    if self.syntaxError == False:
+      if self.token["type"] == "$":
+        print(f"No hay errores sintácticos")
+      else:        
+        print("Esta cadena no es aceptada")
+        
+        print(self.lastRule  , self.token["type"])
 
   def getPredictionsForNT(self, nonTerminal):    
     predictionForNT = {}
@@ -676,6 +630,8 @@ Expr'''
     tokenFields["col"] = tokenFieldsList[-1].strip()
     if tokenFields["type"] in {"id", "text"}:
       tokenFields["value"] = tokenFieldsList[1].strip()
+    if tokenFields["type"] in {'Stack','Program', 'TextWindow', 'Array' }:
+      tokenFields["type"]  = "Reserved_Word"
     return tokenFields
    
 a = syntaxAnalizer()

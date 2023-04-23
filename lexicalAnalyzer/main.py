@@ -1,7 +1,7 @@
 from lexer import Lexer
 
 if __name__ == "__main__":
-    l = Lexer()
+    l = Lexer("")
     while(True):      
       token = l.readNextToken()
       if token == None:

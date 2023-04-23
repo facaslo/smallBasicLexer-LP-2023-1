@@ -256,6 +256,7 @@ def isLL1(predictionsSet, grammar_dict):
     if not (nonTerminal in joinedSets.keys()):
       joinedSets[nonTerminal] = currentPredictionSet
     elif joinedSets[nonTerminal].intersection(currentPredictionSet):
+      print(nonTerminal)
       ll1 = False
       break
     else:
